@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Access</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; margin: 20px; }
+        h2 { text-align: center; color: #333; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; } /* Improved tap target size for mobile */
+        button { width: 100%; padding: 14px; background: #007bff; border: none; color: white; font-size: 16px; border-radius: 4px; cursor: pointer; margin-top: 10px; -webkit-appearance: none; }
+        button:hover { background: #0056b3; }
+        .toggle-link { text-align: center; margin-top: 20px; font-size: 14px; color: #555; line-height: 1.6; }
+        .toggle-link a { color: #007bff; text-decoration: none; cursor: pointer; font-weight: 600; padding: 5px; display: inline-block; } /* Larger touch area for links */
+        .hidden { display: none; }
+        .alert { padding: 12px; color: white; border-radius: 4px; margin-bottom: 15px; font-size: 14px; display: none; text-align: center; font-weight: bold; }
+        .alert.error { background: #dc3545; }
+        .alert.success { background: #28a745; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div id="alertBox" class="alert"></div>
+
+    <div id="signinForm">
+        <h2>Sign In</h2>
+        <input type="text" id="loginUid" placeholder="User ID">
+        <input type="password" id="loginPassword" placeholder="6-digit Password">
+        <button onclick="handleSignIn()">Sign In</button>
+        <div class="toggle-link">
+            Don't have an account? <a onclick="showForm('signup')">Sign Up</a><br><br>
+            <a onclick="showForm('signup')" style="color: #dc3545;">Forgot Password? (Reset & Re-create)</a>
+        </div>
+    </div>
+
+    <div id="signupForm" class="hidden">
+        <h2>Create Account</h2>
+        <input type="text" id="name" placeholder="Full Name" required>
+        <input type="tel" id="phone" placeholder="Mobile Number" required>
+        <input type="email" id="email" placeholder="Email ID" required>
+        <button onclick="handleSignUp()">Sign Up</button>
+        <div class="toggle-link">
+            Already have an account? <a onclick="showForm('signin')">Sign In</a>
+        </div>
+    </div>
+
+    <div id="otpForm" class="hidden">
+        <h2>Verify OTP</h2>
+        <p style="font-size: 13px; color: #666; text-align: center;">Your verification OTP has been sent to your mobile number and email address.</p>
+        <input type="text" id="otpInput" placeholder="Enter 4-Digit OTP">
+        <button onclick="handleVerifyOtp()">Verify & Complete</button>
+    </div>
+</div>
+
+<script>
+    let currentPhone = '';
+
+    function showAlert(message, type) {
+        const box = document.getElementById('alertBox');
+        box.textContent = message;
+        box.className = `alert ${type}`;
+        box.style.display = 'block';
+        setTimeout(() => box.style.display = 'none', 6000);
+    }
+
+    function showForm(formId) {
+        document.getElementById('signinForm').classList.add('hidden');
+        document.getElementById('signupForm').classList.add('hidden');
+        document.getElementById('otpForm').classList.add('hidden');
+        document.getElementById(`${formId}Form`).classList.remove('hidden');
+    }
+
+    async function handleSignUp() {
+        const payload = {
+            name: document.getElementById('name').value,
+            phone: document.getElementById('phone').value,
+            email: document.getElementById('email').value
+        };
+
+        if(!payload.name || !payload.phone || !payload.email) {
+            showAlert("Please fill in all details.", "error");
+            return;
+        }
+
+        const res = await fetch('/api/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+            currentPhone = payload.phone;
+            showAlert(data.message, 'success');
+            showForm('otp');
+        } else {
+            showAlert(data.message, 'error');
+        }
+    }
+
+    async function handleVerifyOtp() {
+        const otp = document.getElementById('otpInput').value;
+        const res = await fetch('/api/verify-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: currentPhone, otp })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+            showAlert("Verification Completed! Your account is active.", "success");
+            setTimeout(() => {
+                showForm('signin');
+                document.getElementById('loginUid').value = data.userId;
+            }, 2000);
+        } else {
+            showAlert(data.message, 'error');
+        }
+    }
+
+    async function handleSignIn() {
+        const userId = document.getElementById('loginUid').value;
+        const password = document.getElementById('loginPassword').value;
+
+        const res = await fetch('/api/signin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, password })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+            localStorage.setItem('user', JSON.stringify(data.user));
+            window.location.href = '/dashboard.html';
+        } else {
+            showAlert(data.message, 'error');
+        }
+    }
+</script>
+</body>
+</html>
