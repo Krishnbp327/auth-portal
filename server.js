@@ -5,6 +5,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
+app.use(express.static(path.join(__dirname)));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ==========================================
@@ -34,7 +35,14 @@ function generatePassword() {
 function generateOTP() {
     return Math.floor(1000 + Math.random() * 9000).toString();
 }
-
+// Add this block right before your signup route:
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'), (err) => {
+        if (err) {
+            res.sendFile(path.join(__dirname, 'index.html'));
+        }
+    });
+});
 // 1. ROUTE: SIGN UP (Requires only Name, Phone, and Email)
 app.post('/api/signup', async (req, res) => {
     const { name, phone, email } = req.body;
