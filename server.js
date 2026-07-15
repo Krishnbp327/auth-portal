@@ -12,18 +12,25 @@ app.use(express.static(path.join(__dirname, 'public')));
 // 🛠️ GOOGLE EMAIL CONFIGURATION
 // ==========================================
 // ==========================================
-// 🛠️ GOOGLE EMAIL CONFIGURATION (SECURED FOR CLOUD)
 // ==========================================
-const EMAIL_USER = process.env.EMAIL_USER; // 👈 Hides your email
-const EMAIL_PASS = process.env.EMAIL_PASS; // 👈 Hides your 16-character key
+// 🛠️ GOOGLE EMAIL CONFIGURATION (SMTP BYPASS FOR CLOUD)
+// ==========================================
+const EMAIL_USER = process.env.EMAIL_USER; 
+const EMAIL_PASS = process.env.EMAIL_PASS; 
+
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // Must be false for port 587
+    requireTLS: true, // Forces secure encryption
     auth: {
         user: EMAIL_USER,
         pass: EMAIL_PASS
+    },
+    tls: {
+        rejectUnauthorized: false // Prevents cloud firewall handshake drops
     }
 });
-
 // Mock Database Arrays
 let users = [];
 let tempRegistrations = {}; 
